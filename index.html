@@ -114,7 +114,7 @@ body.dark ::-webkit-scrollbar-thumb{background:#475569}
       <div class="logo">AI</div>
       <div>
         <h1>School AI Assistant</h1>
-        <p id="onlineText">Powered by Groq • Ready</p>
+        <p id="onlineText">Powered by Groq • GPT-OSS 20B • Ready</p>
       </div>
     </div>
     <div class="actions">
@@ -168,7 +168,7 @@ body.dark ::-webkit-scrollbar-thumb{background:#475569}
 
 const CONFIG = {
   endpoint: "https://api.groq.com/openai/v1/chat/completions",
-  model: "llama-3.3-70b-versatile",
+  model: "openai/gpt-oss-20b",
   maxTokens: 1200,
   temperature: 0.7,
   storageKey: "school_ai_chat_v2",
@@ -359,30 +359,46 @@ async function sendMessage() {
       ...history.map(m => ({role:m.role === "user" ? "user" : "assistant", content:m.content}))
     ];
 
-    const response = await fetch(CONFIG.endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + getKey()
-      },
-      body: JSON.stringify({
-        model: CONFIG.model,
-        messages: apiMessages,
-        temperature: CONFIG.temperature,
-        max_tokens: CONFIG.maxTokens
-      }),
-      signal: abortController.signal
-    });
+    async function callGroq(model) {
+      const response = await fetch(CONFIG.endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + getKey()
+        },
+        body: JSON.stringify({
+          model,
+          messages: apiMessages,
+          temperature: CONFIG.temperature,
+          max_tokens: CONFIG.maxTokens
+        }),
+        signal: abortController.signal
+      });
 
-    const data = await response.json().catch(() => ({}));
+      const data = await response.json().catch(() => ({}));
 
-    if (!response.ok) {
-      const msg = data?.error?.message || `Request failed (${response.status})`;
-      throw new Error(msg);
+      if (!response.ok) {
+        const message = data?.error?.message || `Request failed (${response.status})`;
+        const error = new Error(message);
+        error.status = response.status;
+        throw error;
+      }
+
+      const answer = data?.choices?.[0]?.message?.content;
+      if (!answer) throw new Error("The AI returned an empty response.");
+      return answer;
     }
 
-    const answer = data?.choices?.[0]?.message?.content;
-    if (!answer) throw new Error("The AI returned an empty response.");
+    let answer;
+    try {
+      answer = await callGroq(CONFIG.model);
+    } catch (firstError) {
+      if (firstError.status === 400 || firstError.status === 403 || firstError.status === 404) {
+        answer = await callGroq("openai/gpt-oss-120b");
+      } else {
+        throw firstError;
+      }
+    }
 
     removeTyping();
     addMessage(answer, "bot");
