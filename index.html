@@ -1,623 +1,888 @@
-```html
+ ```html
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My AI Chatbot</title>
+<meta name="theme-color" content="#09090f">
+<meta name="description" content="A modern AI chatbot powered by Groq with GPT-style and Llama model options.">
+<title>Nova AI — Smart Chatbot</title>
 
 <style>
+:root {
+  --bg: #09090f;
+  --panel: #11111b;
+  --panel2: #171725;
+  --border: #29293b;
+  --text: #f4f4fa;
+  --muted: #9999b0;
+  --accent: #8b5cf6;
+  --accent2: #6d5dfc;
+  --green: #43d9a3;
+  --danger: #ff6b81;
+  --radius: 16px;
+}
+
 * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+  box-sizing: border-box;
 }
 
 body {
-    font-family: Arial, sans-serif;
-    background: #0f172a;
-    color: white;
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 15px;
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 50% -25%, #30205a 0%, transparent 48%),
+    var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.chat-container {
-    width: 100%;
-    max-width: 800px;
-    height: 90vh;
-    min-height: 450px;
-    background: #1e293b;
-    border-radius: 18px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    border: 1px solid #334155;
-    box-shadow: 0 15px 40px #0005;
+button, input, textarea, select {
+  font: inherit;
 }
 
-.header {
-    background: #2563eb;
-    padding: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
+button {
+  cursor: pointer;
 }
 
-.header h2 {
-    font-size: 22px;
+button:focus-visible, input:focus-visible,
+textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
-.header p {
-    font-size: 12px;
-    margin-top: 5px;
-    color: #dbeafe;
+.app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 255px minmax(0, 1fr);
 }
 
-.clear-btn {
-    background: #1d4ed8;
-    color: white;
-    border: 1px solid #93c5fd;
-    padding: 9px 12px;
-    border-radius: 8px;
-    cursor: pointer;
+/* SIDEBAR */
+
+.sidebar {
+  background: rgba(13, 13, 23, .96);
+  border-right: 1px solid var(--border);
+  padding: 22px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
 }
 
-.chat-box {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 8px;
+}
+
+.brand-icon {
+  height: 40px;
+  width: 40px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #9c6bff, #6252ef);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  box-shadow: 0 4px 22px #7858ff35;
+}
+
+.brand h2 {
+  font-size: 19px;
+  margin: 0;
+  letter-spacing: -.5px;
+}
+
+.brand small {
+  color: var(--muted);
+  font-size: 11px;
+  display: block;
+  margin-top: 3px;
+}
+
+.new-chat {
+  width: 100%;
+  border: 1px solid #57468d;
+  border-radius: 12px;
+  background: #211a38;
+  color: white;
+  padding: 12px;
+  text-align: left;
+  transition: .2s;
+}
+
+.new-chat:hover {
+  background: #30214f;
+}
+
+.side-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 1.4px;
+  padding: 0 9px;
+  text-transform: uppercase;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow: auto;
+}
+
+.history-item {
+  border: 0;
+  background: transparent;
+  color: #c9c9da;
+  border-radius: 9px;
+  padding: 10px;
+  text-align: left;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-item:hover {
+  background: var(--panel2);
+}
+
+.history-item.active {
+  background: #24203b;
+  color: white;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+  display: grid;
+  gap: 12px;
+}
+
+.api-status {
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: #141420;
+}
+
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.dot {
+  height: 8px;
+  width: 8px;
+  border-radius: 50%;
+  background: #777;
+  flex-shrink: 0;
+}
+
+.dot.online {
+  background: var(--green);
+  box-shadow: 0 0 9px #43d9a366;
+}
+
+.status-hint {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 9px 0 0;
+}
+
+.settings-btn {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 11px;
+  background: transparent;
+  color: #ddddec;
+  text-align: left;
+}
+
+.settings-btn:hover {
+  background: var(--panel2);
+}
+
+/* MAIN */
+
+.main {
+  min-width: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  min-height: 76px;
+  border-bottom: 1px solid var(--border);
+  background: #0c0c14d9;
+  backdrop-filter: blur(12px);
+  padding: 13px 25px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.top-title {
+  min-width: 0;
+}
+
+.top-title h1 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.top-title p {
+  margin: 5px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.model-select {
+  max-width: 250px;
+  min-width: 170px;
+  padding: 10px 12px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: white;
+}
+
+.small-btn {
+  padding: 10px 12px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: white;
+}
+
+.small-btn:hover {
+  border-color: var(--accent);
+}
+
+/* CHAT */
+
+.chat-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.chat-content {
+  width: 100%;
+  max-width: 900px;
+  margin: auto;
+  padding: 30px 25px 24px;
+}
+
+.welcome {
+  min-height: 100%;
+  padding: 65px 0 45px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.welcome-icon {
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  font-size: 35px;
+  border: 1px solid #594c8b;
+  border-radius: 25px;
+  background: linear-gradient(135deg, #2d2050, #17162a);
+  box-shadow: 0 0 55px #875cff17;
+}
+
+.welcome h2 {
+  font-size: clamp(25px, 4vw, 37px);
+  letter-spacing: -1px;
+  margin: 25px 0 9px;
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, #bd91ff, #8b9dff, #62d9df);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.welcome > p {
+  color: var(--muted);
+  font-size: 14px;
+  max-width: 440px;
+  line-height: 1.8;
+  margin: 0;
+}
+
+.suggestions {
+  width: 100%;
+  max-width: 620px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 35px;
+}
+
+.suggestion {
+  text-align: left;
+  background: #13131f;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: white;
+  padding: 17px;
+  transition: .2s;
+}
+
+.suggestion:hover {
+  border-color: #7961d8;
+  background: #1a172a;
+  transform: translateY(-2px);
+}
+
+.suggestion strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 7px;
+}
+
+.suggestion span {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
 }
 
 .message {
-    padding: 12px 15px;
-    border-radius: 12px;
-    max-width: 85%;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    line-height: 1.6;
+  display: flex;
+  gap: 13px;
+  margin: 0 0 28px;
+  align-items: flex-start;
 }
 
-.bot {
-    background: #334155;
-    align-self: flex-start;
+.avatar {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  background: #25203d;
+  border: 1px solid #40365d;
 }
 
-.user {
-    background: #2563eb;
-    align-self: flex-end;
+.message.user .avatar {
+  background: #17372f;
+  border-color: #2a5949;
 }
 
-.quick-actions {
-    padding: 0 15px 12px;
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+.message-body {
+  min-width: 0;
+  flex: 1;
 }
 
-.quick-actions button {
-    border: 1px solid #475569;
-    background: #273449;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 20px;
-    cursor: pointer;
+.message-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 10px;
 }
 
-.quick-actions button:hover {
-    background: #2563eb;
+.message-head strong {
+  font-size: 13px;
 }
 
-.input-area {
-    display: flex;
-    padding: 15px;
-    gap: 10px;
-    background: #111827;
-    border-top: 1px solid #334155;
+.message-head small {
+  color: var(--muted);
+  font-size: 11px;
 }
 
-#user-input {
-    flex: 1;
+.message-text {
+  color: #dedeea;
+  font-size: 14px;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.message-text pre {
+  position: relative;
+  white-space: pre;
+  overflow: auto;
+  padding: 17px;
+  border-radius: 11px;
+  background: #080810;
+  border: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.message-text code {
+  font-family: Consolas, Monaco, monospace;
+  font-size: .92em;
+  background: #252237;
+  padding: 2px 5px;
+  border-radius: 5px;
+}
+
+.message-text pre code {
+  background: none;
+  padding: 0;
+}
+
+.message-text a {
+  color: #b6a4ff;
+  text-decoration: underline;
+}
+
+.message-tools {
+  display: flex;
+  gap: 8px;
+  margin-top: 11px;
+}
+
+.message-tools button {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 5px 9px;
+  font-size: 11px;
+  color: var(--muted);
+  background: transparent;
+}
+
+.message-tools button:hover {
+  color: white;
+  border-color: #6551a0;
+}
+
+.typing {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 10px 0;
+}
+
+.typing span {
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  to { opacity: .25; }
+}
+
+/* COMPOSER */
+
+.composer-area {
+  padding: 10px 22px 17px;
+  background: linear-gradient(transparent, #09090f 22%);
+}
+
+.composer {
+  max-width: 850px;
+  margin: 0 auto;
+  border: 1px solid #39354e;
+  background: #151520;
+  border-radius: 17px;
+  padding: 12px 12px 10px 17px;
+  box-shadow: 0 8px 40px #00000022;
+}
+
+.composer:focus-within {
+  border-color: #7560c5;
+}
+
+#prompt {
+  width: 100%;
+  resize: none;
+  min-height: 31px;
+  max-height: 180px;
+  border: 0;
+  outline: 0;
+  color: white;
+  background: transparent;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+#prompt::placeholder {
+  color: #77778f;
+}
+
+.composer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 9px;
+}
+
+.composer-note {
+  font-size: 11px;
+  color: #85859d;
+}
+
+.send-btn {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #9365ff, #6857ee);
+  color: white;
+  font-weight: 650;
+  font-size: 12px;
+  min-width: 90px;
+}
+
+.send-btn:hover {
+  filter: brightness(1.12);
+}
+
+.send-btn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.disclaimer {
+  text-align: center;
+  color: #74748a;
+  font-size: 10px;
+  margin: 10px auto 0;
+  max-width: 650px;
+  line-height: 1.6;
+}
+
+/* SETTINGS MODAL */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: #000b;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.modal-backdrop.open {
+  display: flex;
+}
+
+.modal {
+  width: 100%;
+  max-width: 490px;
+  max-height: 90vh;
+  overflow: auto;
+  border: 1px solid #39364e;
+  border-radius: 19px;
+  background: #12121e;
+  box-shadow: 0 25px 90px #0009;
+}
+
+.modal-header {
+  padding: 22px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.modal-header h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.modal-header p {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.close-btn {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  font-size: 22px;
+  align-self: flex-start;
+}
+
+.modal-body {
+  padding: 22px;
+  display: grid;
+  gap: 18px;
+}
+
+.field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 650;
+  margin-bottom: 8px;
+}
+
+.field input, .field select {
+  width: 100%;
+  background: #0b0b14;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: white;
+  padding: 12px;
+  outline: 0;
+}
+
+.field input:focus, .field select:focus {
+  border-color: var(--accent);
+}
+
+.field-hint {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+  margin: 7px 0 0;
+}
+
+.key-row {
+  display: flex;
+  gap: 8px;
+}
+
+.key-row input {
+  min-width: 0;
+  flex: 1;
+}
+
+.key-row button {
+  border: 1px solid var(--border);
+  background: #222233;
+  color: white;
+  border-radius: 10px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.warning {
+  padding: 12px;
+  border: 1px solid #664c2b;
+  border-radius: 10px;
+  background: #2a2116;
+  color: #f1c58b;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 9px;
+}
+
+.modal-actions button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.primary-btn {
+  background: var(--accent);
+  color: white;
+  border: 0;
+}
+
+.secondary-btn {
+  background: transparent;
+  color: #ddd;
+  border: 1px solid var(--border);
+}
+
+.toast {
+  position: fixed;
+  bottom: 25px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  padding: 12px 17px;
+  border-radius: 11px;
+  background: #262338;
+  border: 1px solid #51466f;
+  color: white;
+  font-size: 12px;
+  box-shadow: 0 10px 35px #0007;
+  display: none;
+  max-width: calc(100% - 30px);
+}
+
+.toast.show {
+  display: block;
+}
+
+.hidden {
+  display: none !important;
+}
+
+@media (max-width: 800px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .main {
+    height: 100dvh;
+  }
+
+  .topbar {
+    padding: 12px 14px;
+    min-height: 68px;
+  }
+
+  .top-title h1 {
+    font-size: 15px;
+  }
+
+  .top-title p {
+    font-size: 10px;
+  }
+
+  .model-select {
     min-width: 0;
-    padding: 14px;
-    border-radius: 10px;
-    border: 1px solid #475569;
-    background: #1e293b;
-    color: white;
-    font-size: 16px;
-    outline: none;
-}
+    max-width: 155px;
+    width: 155px;
+    font-size: 11px;
+    padding: 9px 5px;
+  }
 
-#user-input:focus {
-    border-color: #60a5fa;
-}
+  .top-actions {
+    gap: 6px;
+  }
 
-#send-btn {
-    background: #2563eb;
-    color: white;
-    border: none;
-    padding: 0 22px;
-    border-radius: 10px;
-    font-size: 16px;
-    cursor: pointer;
-}
+  .small-btn {
+    padding: 9px;
+    font-size: 11px;
+  }
 
-#send-btn:disabled {
-    opacity: 0.6;
-    cursor: wait;
-}
+  .chat-content {
+    padding: 18px 15px;
+  }
 
-.status {
-    padding: 7px 15px;
-    color: #cbd5e1;
+  .welcome {
+    padding: 45px 0 30px;
+  }
+
+  .suggestions {
+    gap: 9px;
+    margin-top: 25px;
+  }
+
+  .suggestion {
+    padding: 12px;
+  }
+
+  .suggestion strong {
     font-size: 12px;
-    background: #111827;
+  }
+
+  .suggestion span {
+    font-size: 11px;
+  }
+
+  .composer-area {
+    padding: 8px 10px 10px;
+  }
+
+  .composer-note {
+    font-size: 10px;
+  }
+
+  .message {
+    gap: 9px;
+  }
+
+  .avatar {
+    width: 30px;
+    height: 30px;
+  }
 }
 
-@media (max-width: 500px) {
-    .chat-container {
-        height: 95vh;
-    }
+@media (max-width: 390px) {
+  .top-title p {
+    display: none;
+  }
 
-    .header h2 {
-        font-size: 18px;
-    }
+  .model-select {
+    width: 125px;
+  }
 
-    .chat-box {
-        padding: 12px;
-    }
-
-    .message {
-        max-width: 95%;
-    }
-
-    #send-btn {
-        padding: 0 14px;
-    }
+  .suggestions {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<div class="chat-container">
+<div class="app">
 
-    <div class="header">
-        <div>
-            <h2>🤖 My AI Assistant</h2>
-            <p>AI Chatbot + Smart Calculator</p>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">✦</div>
+      <div>
+        <h2>Nova AI</h2>
+        <small>Your AI workspace</small>
+      </div>
+    </div>
+
+    <button class="new-chat" id="newChatBtn">＋ &nbsp; New conversation</button>
+
+    <div class="side-label">Recent conversations</div>
+    <div class="history-list" id="historyList"></div>
+
+    <div class="sidebar-bottom">
+      <div class="api-status">
+        <div class="status-line">
+          <span class="dot" id="statusDot"></span>
+          <span id="statusText">API key not configured</span>
         </div>
-        <button class="clear-btn" id="clear-btn">Clear Chat</button>
+        <p class="status-hint" id="statusHint">
+          Add your Groq API key in settings to start chatting.
+        </p>
+      </div>
+
+      <button class="settings-btn" id="openSettingsBtn">
+        ⚙ &nbsp; API &amp; Model Settings
+      </button>
     </div>
-
-    <div class="chat-box" id="chat-box">
-        <div class="message bot">
-            नमस्ते! 👋 मैं तुम्हारा AI Assistant हूँ।
-
-            मैं जोड़, घटाना, गुणा और भाग कर सकता हूँ।
-
-            उदाहरण:
-            25 + 15
-            100 - 45
-            12 × 8
-            100 ÷ 4
-
-            अपना सवाल लिखो!
-        </div>
-    </div>
-
-    <div class="quick-actions">
-        <button data-question="25 + 15">➕ जोड़</button>
-        <button data-question="100 - 45">➖ घटाना</button>
-        <button data-question="12 × 8">✖️ गुणा</button>
-        <button data-question="100 ÷ 4">➗ भाग</button>
-    </div>
-
-    <div class="input-area">
-        <input
-            type="text"
-            id="user-input"
-            placeholder="अपना सवाल लिखें..."
-            autocomplete="off"
-        >
-        <button id="send-btn">Send ➤</button>
-    </div>
-
-    <div class="status" id="status">
-        Calculator चालू है | AI API वैकल्पिक है
-    </div>
-
-</div>
-
-<script>
-/*
-=====================================================
-1. GROQ API CONFIGURATION
-=====================================================
-
-अगर सामान्य सवालों के AI जवाब भी चाहिए, तो नीचे
-अपनी Groq API key डालें।
-
-ध्यान दें:
-GitHub Pages पर रखी API key सार्वजनिक हो सकती है।
-इसलिए इस फाइल में असली API key डालकर वेबसाइट
-को सार्वजनिक रूप से प्रकाशित न करें।
-
-सुरक्षित विकल्प: API key को server-side रखें।
-*/
-
-const GROQ_API_KEY = "";
-const GROQ_MODEL = "llama-3.3-70b-versatile";
-
-const chatBox = document.getElementById("chat-box");
-const userInput = document.getElementById("user-input");
-const sendBtn = document.getElementById("send-btn");
-const statusBox = document.getElementById("status");
-
-let busy = false;
-
-/*
-=====================================================
-2. MESSAGE DISPLAY
-=====================================================
-*/
-
-function addMessage(text, type) {
-    const message = document.createElement("div");
-    message.className = "message " + type;
-
-    // यूज़र के टेक्स्ट को HTML की तरह नहीं चलाते।
-    message.textContent = text;
-
-    chatBox.appendChild(message);
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-/*
-=====================================================
-3. SAFE MATH PARSER
-=====================================================
-
-यह parser केवल गणित के स्वीकार्य चिन्हों को हल करता है।
-यह user input को JavaScript code की तरह execute नहीं करता।
-*/
-
-function tokenize(expression) {
-    const tokens = [];
-    let i = 0;
-
-    while (i < expression.length) {
-        const char = expression[i];
-
-        if (/\s/.test(char)) {
-            i++;
-            continue;
-        }
-
-        // संख्याएँ, जैसे 25, 3.14
-        if (/[0-9.]/.test(char)) {
-            let number = "";
-            let dots = 0;
-
-            while (
-                i < expression.length &&
-                /[0-9.]/.test(expression[i])
-            ) {
-                if (expression[i] === ".") dots++;
-                number += expression[i];
-                i++;
-            }
-
-            if (dots > 1 || number === ".") {
-                throw new Error("संख्या सही नहीं है।");
-            }
-
-            tokens.push(Number(number));
-            continue;
-        }
-
-        if ("+-*/()%".includes(char)) {
-            tokens.push(char);
-            i++;
-            continue;
-        }
-
-        throw new Error("सवाल में कोई गलत चिन्ह है।");
-    }
-
-    return tokens;
-}
-
-function evaluateMath(expression) {
-    const tokens = tokenize(expression);
-    let position = 0;
-
-    function parseExpression() {
-        let value = parseTerm();
-
-        while (
-            tokens[position] === "+" ||
-            tokens[position] === "-"
-        ) {
-            const operator = tokens[position++];
-
-            // अगले operator से पहले का term हल करें।
-            const right = parseTerm();
-
-            value = operator === "+"
-                ? value + right
-                : value - right;
-        }
-
-        return value;
-    }
-
-    function parseTerm() {
-        let value = parseUnary();
-
-        while (
-            tokens[position] === "*" ||
-            tokens[position] === "/" ||
-            tokens[position] === "%"
-        ) {
-            const operator = tokens[position++];
-            const right = parseUnary();
-
-            if (
-                (operator === "/" || operator === "%") &&
-                right === 0
-            ) {
-                throw new Error("शून्य से भाग नहीं दे सकते!");
-            }
-
-            if (operator === "*") value *= right;
-            if (operator === "/") value /= right;
-            if (operator === "%") value %= right;
-        }
-
-        return value;
-    }
-
-    function parseUnary() {
-        if (tokens[position] === "+") {
-            position++;
-            return parseUnary();
-        }
-
-        if (tokens[position] === "-") {
-            position++;
-            return -parseUnary();
-        }
-
-        return parsePrimary();
-    }
-
-    function parsePrimary() {
-        const token = tokens[position++];
-
-        if (typeof token === "number") {
-            return token;
-        }
-
-        if (token === "(") {
-            const value = parseExpression();
-
-            if (tokens[position] !== ")") {
-                throw new Error("ब्रैकेट बंद करना भूल गए।");
-            }
-
-            position++;
-            return value;
-        }
-
-        throw new Error("गणित का सवाल समझ नहीं आया।");
-    }
-
-    if (tokens.length === 0) {
-        throw new Error("पहले गणित का सवाल लिखो।");
-    }
-
-    const result = parseExpression();
-
-    if (position !== tokens.length) {
-        throw new Error("सवाल का format सही नहीं है।");
-    }
-
-    if (!Number.isFinite(result)) {
-        throw new Error("इस सवाल का सीमित संख्यात्मक उत्तर नहीं है।");
-    }
-
-    return Number(result.toPrecision(12));
-}
-
-/*
-=====================================================
-4. HINDI / ENGLISH MATH QUESTION HANDLER
-=====================================================
-*/
-
-function normalizeMathQuestion(question) {
-    let q = question.toLowerCase().trim();
-
-    // केवल सामान्य गणित के निर्देश हटाएँ।
-    q = q
-        .replace(/कितना होगा|कितना है|का उत्तर|उत्तर बताओ|हल करो|हल करें|निकालो|गणना करो|calculate|solve|what is|answer|please/g, " ")
-        .replace(/जोड़(?:ो|ना)?|जमा करो|add|plus/g, "+")
-        .replace(/घटाओ|घटाना|subtract|minus/g, "-")
-        .replace(/गुणा करो|गुणा|multiply|multiplied by|times/g, "*")
-        .replace(/भाग करो|भाग|divide|divided by/g, "/")
-        .replace(/×|✕|✖/g, "*")
-        .replace(/÷|\/|∕/g, "/")
-        .replace(/[०-९]/g, digit =>
-            "०१२३४५६७८९".indexOf(digit)
-        )
-        .replace(/,/g, " ")
-        .trim();
-
-    return q;
-}
-
-function getMathAnswer(question) {
-    const expression = normalizeMathQuestion(question);
-
-    // कम-से-कम एक गणित का operator होना चाहिए।
-    if (!/[+\-*/%()]/.test(expression)) {
-        return null;
-    }
-
-    // सामान्य वाक्यों को गणित समझकर हल करने से बचें।
-    if (!/^[\d\s.+\-*/()%]+$/.test(expression)) {
-        return null;
-    }
-
-    try {
-        return evaluateMath(expression);
-    } catch (error) {
-        return {
-            error: error.message
-        };
-    }
-}
-
-/*
-=====================================================
-5. OPTIONAL GROQ AI
-=====================================================
-*/
-
-async function askGroq(question) {
-    if (!GROQ_API_KEY.trim()) {
-        return "यह गणित का सवाल नहीं लग रहा है। सामान्य AI जवाबों के लिए सुरक्षित backend और Groq API configuration जोड़नी होगी।";
-    }
-
-    const response = await fetch(
-        "https://api.groq.com/openai/v1/chat/completions",
-        {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + GROQ_API_KEY
-            },
-            body: JSON.stringify({
-                model: GROQ_MODEL,
-                messages: [
-                    {
-                        role: "system",
-                        content: "You are a helpful AI assistant. Answer clearly and simply. For arithmetic, calculate carefully."
-                    },
-                    {
-                        role: "user",
-                        content: question
-                    }
-                ],
-                temperature: 0.2
-            })
-        }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-        throw new Error(
-            data.error?.message || "AI API request failed."
-        );
-    }
-
-    return data.choices?.[0]?.message?.content
-        || "माफ़ करना, कोई जवाब नहीं मिला।";
-}
-
-/*
-=====================================================
-6. SEND MESSAGE
-=====================================================
-*/
-
-async function sendMessage() {
-    if (busy) return;
-
-    const question = userInput.value.trim();
-
-    if (!question) return;
-
-    addMessage(question, "user");
-    userInput.value = "";
-
-    // गणित का सवाल पहले calculator को भेजें।
-    const mathAnswer = getMathAnswer(question);
-
-    if (mathAnswer !== null) {
-        if (
-            typeof mathAnswer === "object" &&
-            mathAnswer.error
-        ) {
-            addMessage("❌ " + mathAnswer.error, "bot");
-        } else {
-            addMessage("🧮 उत्तर: " + mathAnswer, "bot");
-        }
-
-        statusBox.textContent = "Calculator ने जवाब दिया।";
-        return;
-    }
-
-    // सामान्य सवालों के लिए AI API।
-    busy = true;
-    sendBtn.disabled = true;
-    statusBox.textContent = "AI जवाब तैयार कर रहा है...";
-
-    try {
-        const answer = await askGroq(question);
-        addMessage(answer, "bot");
-        statusBox.textContent = "तैयार";
-    } catch (error) {
-        addMessage("❌ AI Error: " + error.message, "bot");
-        statusBox.textContent = "AI API में समस्या आई।";
-    } finally {
-        busy = false;
-        sendBtn.disabled = false;
-        userInput.focus();
-    }
-}
-
-/*
-=====================================================
-7. BUTTONS AND ENTER KEY
-=====================================================
-*/
-
-sendBtn.addEventListener("click", sendMessage);
-
-userInput.addEventListener("keydown", event => {
-    if (event.key === "Enter") {
-        sendMessage();
-    }
-});
-
-document.querySelectorAll("[data-question]").forEach(button => {
-    button.addEventListener("click", () => {
-        userInput.value = button.dataset.question;
-        sendMessage();
-    });
-});
-
-document.getElementById("clear-btn").addEventListener("click", () => {
-    chatBox.replaceChildren();
-
-    addMessage(
-        "चैट साफ़ हो गई है! 😊 अपना अगला सवाल लिखो।",
-        "bot"
-    );
-
-    statusBox.textContent = "Calculator चालू है";
-});
-</script>
-
-</body>
-</html>
-```
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <header class="topbar">
+      <div class="top-title">
+        <h1>AI Assistant</h1>
+        <p>Ask anything. Learn, create, and explore.</p>
+      </div>
+
+      <div class="top-actions">
+        <select class="model-select" id="modelSelect" aria-label="Choose AI model">
+          <optgroup label="GPT-style models">
+            <option value="openai/gpt-oss-20b">GPT-OSS 20B</option>
+            <option value="openai/gpt-oss-120b">GPT-OSS 120B</option>
+          </optgroup>
+          <optgroup label="Llama models">
+            <option value="llama-3.3-70b
