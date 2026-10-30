@@ -885,4 +885,872 @@ textarea:focus-visible, select:focus-visible {
             <option value="openai/gpt-oss-120b">GPT-OSS 120B</option>
           </optgroup>
           <optgroup label="Llama models">
-            <option value="llama-3.3-70b
+            <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
+            <option value="llama-3.1-8b-instant">Llama 3.1 8B</option>
+          </optgroup>
+        </select>
+
+        <button class="small-btn" id="refreshModelsBtn" title="Load available models">
+          ↻ Models
+        </button>
+
+        <button class="small-btn" id="mobileSettingsBtn" title="API settings">
+          ⚙
+        </button>
+      </div>
+    </header>
+
+    <section class="chat-scroll" id="chatScroll">
+      <div class="chat-content" id="chatContent">
+
+        <div class="welcome" id="welcome">
+          <div class="welcome-icon">✦</div>
+          <h2>Meet your <span class="gradient-text">AI assistant</span></h2>
+          <p>
+            Your personal AI workspace for learning, coding, writing,
+            mathematics, and creative ideas.
+          </p>
+
+          <div class="suggestions">
+            <button class="suggestion" data-prompt="Explain artificial intelligence in simple Hindi.">
+              <strong>🎓 Learn something</strong>
+              <span>Understand AI in simple Hindi.</span>
+            </button>
+
+            <button class="suggestion" data-prompt="Write a complete HTML, CSS and JavaScript calculator with addition, subtraction, multiplication and division.">
+              <strong>💻 Write code</strong>
+              <span>Build a calculator with JavaScript.</span>
+            </button>
+
+            <button class="suggestion" data-prompt="Explain supervised and unsupervised machine learning with easy examples.">
+              <strong>🧠 Explore AI</strong>
+              <span>Learn the basics of machine learning.</span>
+            </button>
+
+            <button class="suggestion" data-prompt="Give me five creative and useful school project ideas using AI.">
+              <strong>💡 Get ideas</strong>
+              <span>Discover interesting school projects.</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="messages"></div>
+        <div id="typingIndicator" class="typing hidden">
+          <span>✦</span> Nova is thinking...
+        </div>
+
+      </div>
+    </section>
+
+    <footer class="composer-area">
+      <form class="composer" id="chatForm">
+        <textarea
+          id="prompt"
+          rows="1"
+          maxlength="12000"
+          placeholder="Message Nova AI..."
+          aria-label="Your message"
+        ></textarea>
+
+        <div class="composer-bottom">
+          <span class="composer-note">↵ Send &nbsp; · &nbsp; Shift + ↵ New line</span>
+          <button class="send-btn" id="sendBtn" type="submit">
+            Send &nbsp; ↑
+          </button>
+        </div>
+      </form>
+
+      <p class="disclaimer">
+        AI can make mistakes. Verify important information.
+        Do not enter passwords or sensitive personal information.
+      </p>
+    </footer>
+  </main>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-backdrop" id="settingsBackdrop">
+  <section class="modal" role="dialog" aria-modal="true"
+    aria-labelledby="settingsTitle">
+
+    <div class="modal-header">
+      <div>
+        <h2 id="settingsTitle">⚙ API &amp; Model Settings</h2>
+        <p>Connect your Groq API key to start chatting.</p>
+      </div>
+      <button class="close-btn" id="closeSettingsBtn"
+        aria-label="Close settings">×</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="field">
+        <label for="apiKeyInput">Groq API Key</label>
+        <div class="key-row">
+          <input
+            type="password"
+            id="apiKeyInput"
+            placeholder="Paste your Groq API key"
+            autocomplete="off"
+            spellcheck="false"
+          >
+          <button type="button" id="toggleKeyBtn">Show</button>
+        </div>
+        <p class="field-hint">
+          Enter the key from your Groq console. It stays in this page's
+          memory and is not saved in localStorage.
+        </p>
+      </div>
+
+      <div class="field">
+        <label for="settingsModelSelect">Default AI Model</label>
+        <select id="settingsModelSelect">
+          <optgroup label="GPT-style models">
+            <option value="openai/gpt-oss-20b">GPT-OSS 20B</option>
+            <option value="openai/gpt-oss-120b">GPT-OSS 120B</option>
+          </optgroup>
+          <optgroup label="Llama models">
+            <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
+            <option value="llama-3.1-8b-instant">Llama 3.1 8B</option>
+          </optgroup>
+        </select>
+        <p class="field-hint">
+          You can change the model at any time. The selected model must
+          be available to your Groq account.
+        </p>
+      </div>
+
+      <div class="field">
+        <label for="temperatureInput">
+          Creativity: <span id="temperatureValue">0.7</span>
+        </label>
+        <input type="range" id="temperatureInput"
+          min="0" max="1.5" step="0.1" value="0.7">
+        <p class="field-hint">
+          Lower values generally produce more focused responses.
+          Some models may have different parameter limits.
+        </p>
+      </div>
+
+      <div class="warning">
+        🔒 Security warning: this is a browser-only application.
+        Never publish your API key or share a key with other users.
+        Anyone who can access a key may be able to use its API quota.
+        A public deployment should use a secure backend.
+      </div>
+
+      <div class="modal-actions">
+        <button class="secondary-btn" id="clearKeyBtn" type="button">
+          Clear key
+        </button>
+        <button class="primary-btn" id="saveSettingsBtn" type="button">
+          Save settings
+        </button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+/* =========================================
+   NOVA AI - GROQ CHATBOT
+   Everything is in this index.html file.
+========================================= */
+
+const API_URL = "https://api.groq.com/openai/v1/chat/completions";
+const MODELS_URL = "https://api.groq.com/openai/v1/models";
+
+const $ = (id) => document.getElementById(id);
+
+/*
+  The API key exists only in JavaScript memory.
+  It is NOT saved in localStorage or sessionStorage.
+*/
+let apiKey = "";
+let isBusy = false;
+let temperature = 0.7;
+
+let conversations = [];
+let currentConversationId = null;
+let toastTimer = null;
+
+const DEFAULT_MODEL = "openai/gpt-oss-20b";
+
+const DEFAULT_MODELS = [
+  {
+    id: "openai/gpt-oss-20b",
+    name: "GPT-OSS 20B",
+    family: "gpt"
+  },
+  {
+    id: "openai/gpt-oss-120b",
+    name: "GPT-OSS 120B",
+    family: "gpt"
+  },
+  {
+    id: "llama-3.3-70b-versatile",
+    name: "Llama 3.3 70B",
+    family: "llama"
+  },
+  {
+    id: "llama-3.1-8b-instant",
+    name: "Llama 3.1 8B",
+    family: "llama"
+  }
+];
+
+let availableModels = [...DEFAULT_MODELS];
+
+/* ---------- UTILITIES ---------- */
+
+function showToast(message) {
+  const toast = $("toast");
+  toast.textContent = message;
+  toast.classList.add("show");
+
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.classList.remove("show");
+  }, 3200);
+}
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  })[char]);
+}
+
+/*
+  A small safe text formatter.
+  HTML from the model is escaped rather than executed.
+*/
+function formatMessage(text) {
+  let safe = escapeHTML(text);
+
+  const codeBlocks = [];
+
+  safe = safe.replace(/```([a-zA-Z0-9_+-]*)\n?([\s\S]*?)```/g,
+    (_, language, code) => {
+      const index = codeBlocks.length;
+
+      codeBlocks.push(
+        `<pre><code>${code.trimEnd()}</code></pre>`
+      );
+
+      return `@@CODE_BLOCK_${index}@@`;
+    }
+  );
+
+  safe = safe.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+
+  safe = safe.replace(
+    /\*\*(.+?)\*\*/g,
+    "<strong>$1</strong>"
+  );
+
+  safe = safe.replace(
+    /(^|\n)### (.+)/g,
+    "$1<strong>$2</strong>"
+  );
+
+  safe = safe.replace(
+    /(^|\n)## (.+)/g,
+    "$1<strong>$2</strong>"
+  );
+
+  safe = safe.replace(
+    /(^|\n)# (.+)/g,
+    "$1<strong>$2</strong>"
+  );
+
+  safe = safe.replace(/\n/g, "<br>");
+
+  safe = safe.replace(
+    /@@CODE_BLOCK_(\d+)@@/g,
+    (_, index) => codeBlocks[Number(index)] || ""
+  );
+
+  return safe;
+}
+
+function newId() {
+  return Date.now().toString(36) +
+    Math.random().toString(36).slice(2, 8);
+}
+
+function getCurrentConversation() {
+  return conversations.find(
+    c => c.id === currentConversationId
+  );
+}
+
+function updateStatus(connected) {
+  $("statusDot").classList.toggle("online", connected);
+
+  $("statusText").textContent = connected
+    ? "API key configured"
+    : "API key not configured";
+
+  $("statusHint").textContent = connected
+    ? "Ready to send messages to Groq."
+    : "Add your Groq API key in settings to start chatting.";
+}
+
+/* ---------- SETTINGS ---------- */
+
+function openSettings() {
+  $("apiKeyInput").value = apiKey;
+  $("settingsModelSelect").value = $("modelSelect").value;
+  $("temperatureInput").value = String(temperature);
+  $("temperatureValue").textContent = temperature.toFixed(1);
+
+  $("settingsBackdrop").classList.add("open");
+
+  setTimeout(() => $("apiKeyInput").focus(), 50);
+}
+
+function closeSettings() {
+  $("settingsBackdrop").classList.remove("open");
+}
+
+function saveSettings() {
+  const newKey = $("apiKeyInput").value.trim();
+
+  if (newKey && /\s/.test(newKey)) {
+    showToast("The API key should not contain spaces.");
+    return;
+  }
+
+  apiKey = newKey;
+
+  const chosenModel = $("settingsModelSelect").value;
+
+  if (chosenModel) {
+    $("modelSelect").value = chosenModel;
+  }
+
+  temperature = Number($("temperatureInput").value);
+
+  updateStatus(Boolean(apiKey));
+  closeSettings();
+
+  if (apiKey) {
+    showToast("Settings applied for this page session.");
+  } else {
+    showToast("API key cleared.");
+  }
+}
+
+function clearKey() {
+  apiKey = "";
+  $("apiKeyInput").value = "";
+  updateStatus(false);
+  showToast("API key cleared from memory.");
+}
+
+/* ---------- MODEL LIST ---------- */
+
+function buildModelOptions(models, selectedValue) {
+  const select = $("modelSelect");
+  const settingsSelect = $("settingsModelSelect");
+
+  const oldSelected = selectedValue || select.value || DEFAULT_MODEL;
+
+  function fillOptions(target) {
+    target.replaceChildren();
+
+    const groups = [
+      {
+        label: "GPT-style models",
+        models: models.filter(m => m.family === "gpt")
+      },
+      {
+        label: "Llama models",
+        models: models.filter(m => m.family === "llama")
+      },
+      {
+        label: "Other Groq models",
+        models: models.filter(m =>
+          m.family !== "gpt" && m.family !== "llama"
+        )
+      }
+    ];
+
+    for (const group of groups) {
+      if (!group.models.length) continue;
+
+      const optgroup = document.createElement("optgroup");
+      optgroup.label = group.label;
+
+      for (const model of group.models) {
+        const option = document.createElement("option");
+        option.value = model.id;
+        option.textContent = model.name;
+        optgroup.appendChild(option);
+      }
+
+      target.appendChild(optgroup);
+    }
+
+    if (models.some(m => m.id === oldSelected)) {
+      target.value = oldSelected;
+    } else if (models.some(m => m.id === DEFAULT_MODEL)) {
+      target.value = DEFAULT_MODEL;
+    } else if (models.length) {
+      target.value = models[0].id;
+    }
+  }
+
+  fillOptions(select);
+  fillOptions(settingsSelect);
+}
+
+async function loadModels() {
+  if (!apiKey) {
+    openSettings();
+    showToast("Add your Groq API key to load models.");
+    return;
+  }
+
+  const button = $("refreshModelsBtn");
+  button.disabled = true;
+  button.textContent = "Loading...";
+
+  try {
+    const response = await fetch(MODELS_URL, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`
+      }
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        data.error?.message ||
+        `Model list request failed (${response.status}).`
+      );
+    }
+
+    if (!Array.isArray(data.data)) {
+      throw new Error("The API returned an unexpected model list.");
+    }
+
+    const models = data.data
+      .filter(m => m.id && m.active !== false)
+      .map(m => {
+        const id = m.id.toLowerCase();
+
+        let family = "other";
+
+        if (
+          id.startsWith("openai/gpt-oss-") ||
+          id.includes("gpt-oss")
+        ) {
+          family = "gpt";
+        } else if (id.includes("llama")) {
+          family = "llama";
+        }
+
+        return {
+          id: m.id,
+          name: m.id,
+          family
+        };
+      })
+      .sort((a, b) => a.id.localeCompare(b.id));
+
+    if (!models.length) {
+      throw new Error("No available models were returned.");
+    }
+
+    const current = $("modelSelect").value;
+    availableModels = models;
+    buildModelOptions(models, current);
+
+    showToast(`Loaded ${models.length} available models.`);
+  } catch (error) {
+    showToast("Could not load models: " + error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "↻ Models";
+  }
+}
+
+/* ---------- CONVERSATIONS ---------- */
+
+function createConversation() {
+  const conversation = {
+    id: newId(),
+    title: "New conversation",
+    messages: [],
+    createdAt: Date.now()
+  };
+
+  conversations.unshift(conversation);
+  currentConversationId = conversation.id;
+
+  renderHistory();
+  renderConversation();
+
+  $("prompt").focus();
+}
+
+function renderHistory() {
+  const list = $("historyList");
+  list.replaceChildren();
+
+  for (const conversation of conversations) {
+    const button = document.createElement("button");
+    button.className = "history-item" +
+      (conversation.id === currentConversationId ? " active" : "");
+
+    button.textContent = conversation.title;
+    button.title = conversation.title;
+
+    button.addEventListener("click", () => {
+      currentConversationId = conversation.id;
+      renderHistory();
+      renderConversation();
+    });
+
+    list.appendChild(button);
+  }
+}
+
+function renderConversation() {
+  const conversation = getCurrentConversation();
+
+  $("messages").replaceChildren();
+  $("typingIndicator").classList.add("hidden");
+
+  if (!conversation || !conversation.messages.length) {
+    $("welcome").classList.remove("hidden");
+    return;
+  }
+
+  $("welcome").classList.add("hidden");
+
+  for (const message of conversation.messages) {
+    addMessageToDOM(message, false);
+  }
+
+  scrollToBottom();
+}
+
+function addMessageToDOM(message, shouldScroll = true) {
+  const messages = $("messages");
+
+  const wrapper = document.createElement("article");
+  wrapper.className = "message " +
+    (message.role === "user" ? "user" : "assistant");
+
+  const avatar = document.createElement("div");
+  avatar.className = "avatar";
+  avatar.textContent = message.role === "user" ? "👤" : "✦";
+
+  const body = document.createElement("div");
+  body.className = "message-body";
+
+  const head = document.createElement("div");
+  head.className = "message-head";
+
+  const name = document.createElement("strong");
+  name.textContent = message.role === "user" ? "You" : "Nova AI";
+
+  const time = document.createElement("small");
+  time.textContent = message.time || "";
+
+  head.append(name, time);
+
+  const text = document.createElement("div");
+  text.className = "message-text";
+  text.innerHTML = formatMessage(message.content);
+
+  body.append(head, text);
+
+  if (message.role === "assistant" && message.content) {
+    const tools = document.createElement("div");
+    tools.className = "message-tools";
+
+    const copyButton = document.createElement("button");
+    copyButton.textContent = "Copy response";
+
+    copyButton.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(message.content);
+        showToast("Response copied.");
+      } catch {
+        showToast("Copy failed. Select the text and copy it manually.");
+      }
+    });
+
+    tools.appendChild(copyButton);
+    body.appendChild(tools);
+  }
+
+  wrapper.append(avatar, body);
+  messages.appendChild(wrapper);
+
+  if (shouldScroll) scrollToBottom();
+
+  return wrapper;
+}
+
+function scrollToBottom() {
+  $("chatScroll").scrollTop = $("chatScroll").scrollHeight;
+}
+
+function setBusy(value) {
+  isBusy = value;
+  $("sendBtn").disabled = value;
+  $("prompt").disabled = value;
+
+  $("sendBtn").textContent = value ? "Thinking..." : "Send ↑";
+  $("typingIndicator").classList.toggle("hidden", !value);
+}
+
+function getTime() {
+  return new Date().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+/* ---------- SEND MESSAGE ---------- */
+
+async function sendMessage(text) {
+  const prompt = text.trim();
+
+  if (!prompt || isBusy) return;
+
+  if (!apiKey) {
+    openSettings();
+    showToast("Please add your Groq API key first.");
+    return;
+  }
+
+  if (!currentConversationId || !getCurrentConversation()) {
+    createConversation();
+  }
+
+  const conversation = getCurrentConversation();
+
+  if (!conversation) {
+    showToast("Could not create a conversation.");
+    return;
+  }
+
+  const userMessage = {
+    role: "user",
+    content: prompt,
+    time: getTime()
+  };
+
+  conversation.messages.push(userMessage);
+
+  if (conversation.title === "New conversation") {
+    conversation.title = prompt.length > 35
+      ? prompt.slice(0, 35) + "..."
+      : prompt;
+  }
+
+  $("welcome").classList.add("hidden");
+  $("prompt").value = "";
+  autoResizePrompt();
+
+  renderHistory();
+  addMessageToDOM(userMessage);
+  setBusy(true);
+
+  /*
+    Send only the recent messages to control request size.
+    This preserves some conversation context.
+  */
+  const context = conversation.messages
+    .slice(-20)
+    .map(m => ({
+      role: m.role,
+      content: m.content
+    }));
+
+  const model = $("modelSelect").value;
+
+  const payload = {
+    model,
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are Nova AI, a helpful, accurate assistant. " +
+          "Answer in the language used by the user. " +
+          "For students, explain difficult concepts in simple language. " +
+          "For calculations, check your arithmetic carefully. " +
+          "For programming, provide clear and correct examples. " +
+          "Be honest when you are uncertain."
+      },
+      ...context
+    ],
+    temperature,
+    max_completion_tokens: 2048,
+    stream: false
+  };
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const apiMessage =
+        data.error?.message ||
+        data.message ||
+        `Request failed with HTTP ${response.status}.`;
+
+      throw new Error(apiMessage);
+    }
+
+    const answer = data.choices?.[0]?.message?.content;
+
+    if (typeof answer !== "string" || !answer.trim()) {
+      throw new Error("The model returned an empty response.");
+    }
+
+    const assistantMessage = {
+      role: "assistant",
+      content: answer,
+      time: getTime()
+    };
+
+    conversation.messages.push(assistantMessage);
+    addMessageToDOM(assistantMessage);
+
+  } catch (error) {
+    let message = error.message || "Unknown error.";
+
+    if (message.includes("Failed to fetch")) {
+      message =
+        "Network request failed. Check your internet connection, " +
+        "API access, and browser console for CORS or network errors.";
+    }
+
+    const errorMessage = {
+      role: "assistant",
+      content:
+        "Sorry, I couldn't get a response.\n\n" +
+        "Error: " + message +
+        "\n\nTry checking your API key and selecting another available model.",
+      time: getTime()
+    };
+
+    conversation.messages.push(errorMessage);
+    addMessageToDOM(errorMessage);
+
+  } finally {
+    setBusy(false);
+    $("prompt").focus();
+    scrollToBottom();
+  }
+}
+
+/* ---------- INPUT ---------- */
+
+function autoResizePrompt() {
+  const prompt = $("prompt");
+
+  prompt.style.height = "auto";
+  prompt.style.height = Math.min(prompt.scrollHeight, 180) + "px";
+}
+
+$("prompt").addEventListener("input", autoResizePrompt);
+
+$("prompt").addEventListener("keydown", event => {
+  if (
+    event.key === "Enter" &&
+    !event.shiftKey &&
+    !event.isComposing
+  ) {
+    event.preventDefault();
+    $("chatForm").requestSubmit();
+  }
+});
+
+$("chatForm").addEventListener("submit", event => {
+  event.preventDefault();
+  sendMessage($("prompt").value);
+});
+
+/* ---------- EVENT LISTENERS ---------- */
+
+$("newChatBtn").addEventListener("click", createConversation);
+$("openSettingsBtn").addEventListener("click", openSettings);
+$("mobileSettingsBtn").addEventListener("click", openSettings);
+$("closeSettingsBtn").addEventListener("click", closeSettings);
+
+$("settingsBackdrop").addEventListener("click", event => {
+  if (event.target === $("settingsBackdrop")) {
+    closeSettings();
+  }
+});
+
+$("saveSettingsBtn").addEventListener("click", saveSettings);
+$("clearKeyBtn").addEventListener("click", clearKey);
+$("refreshModelsBtn").addEventListener("click", loadModels);
+
+$("toggleKeyBtn").addEventListener("click", () => {
+  const input = $("apiKeyInput");
+  const show = input.type === "password";
+
+  input.type = show ? "text" : "password";
+  $("toggleKeyBtn").textContent = show ? "Hide" : "Show";
+});
+
+$("temperatureInput").addEventListener("input", event => {
+  $("temperatureValue").textContent =
+    Number(event.target.value).toFixed(1);
+});
+
+$("modelSelect").addEventListener("change", () => {
+  $("settingsModelSelect").value = $("modelSelect").value;
+});
+
+$("settingsModelSelect").addEventListener("change", () => {
+  $("modelSelect").value = $("settingsModelSelect").value;
+});
+
+document.querySelectorAll(".suggestion").forEach(button => {
+  button.addEventListener("click", () => {
+    sendMessage(button.dataset.prompt || "");
+  });
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") closeSettings();
+});
+
+/* ---------- STARTUP ---------- */
+
+buildModelOptions(availableModels, DEFAULT_MODEL);
+updateStatus(false);
+renderHistory();
+createConversation();
+</script>
+
+</body>
+</html>
+```
